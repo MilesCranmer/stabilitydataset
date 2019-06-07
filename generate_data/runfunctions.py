@@ -204,10 +204,11 @@ def run_resonant2(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False, hook=Non
         return sim, filename
     
     if not shadow and hook is not None:
+        sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets) # get same sim
         continue_with_sim = hook(sim)
         if not continue_with_sim:
             return None, None
-    
+
     sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets) # get same sim
     if verbose:
         print('{0}, {1}, {2}, {3}, {4}, {5:8e}, {6:8e}, {7:8e}\n'.format(originalseed, seed, pairindex, j, k, Zstar, libfac, Zcom))

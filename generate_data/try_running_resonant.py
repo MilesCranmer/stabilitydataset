@@ -10,26 +10,37 @@
 
 from runfunctions import run_resonant2, run_resonant, run_resonant_condition
 import sys
+sys.path.append('/mnt/ceph/users/mcranmer/MLstability/generate_training_data/')
+from training_data_functions import gen_training_data, orbtseries, orbsummaryfeaturesxgb, ressummaryfeaturesxgb, normressummaryfeaturesxgb, ressummaryfeaturesxgb2
 from warnings import filterwarnings
 from icecream import ic
 filterwarnings('ignore')
+from collections import OrderedDict
+
+kwargs = OrderedDict()
+kwargs['Norbits'] = 1e4
+kwargs['Nout'] = 1000
 
 def hook(sim):
-    """Gets the sim at 1e6 orbits."""
+    """Gets the sim at 0 orbits."""
+
+    q = ressummaryfeaturesxgb(sim, list(kwargs.values()))
+    print(q)
+
     return True
 
 # !rm ../data/resonant/simulation_archives/*runs/* 
 
 filenames = []
 
-new_seeds = list(range(0+120000, 10000+120000))
+new_seeds = list(range(10000+120000, 10005+120000))
 
 from multiprocessing import Pool
 
 from subprocess import call
 
 def run_sim(seed):
-    maxorbs = 1e5
+    maxorbs = 1e5 #Set to small number like 5 if only relying on hook!
     initial_filename = 'test%.12d.bin'%(seed,)
     sim, filename = run_resonant2(seed, initial_filename, maxorbs=maxorbs, hook=hook, verbose=False)
 
@@ -45,23 +56,17 @@ def run_sim(seed):
         good_sim = False
         
     #sim.simulationarchive_snapshot(filename)
+    if not good_sim:
+        call(["rm", filename])
+        return None
     
     ic("Nice system to test!")
-    """
     if good_sim:
         ic("Doing shadow test")
-        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, maxorbs=maxorbs, hook=hook, verbose=False, shadow=True)
+        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, maxorbs=5, hook=hook, verbose=False, shadow=True)
         ic("Done shadow test")
-        """
-    return (filename, good_sim)
+    return filename
 
 pool = Pool(35)
 new_filenames = pool.map(run_sim, new_seeds)
 
-print("Removing", flush=True)
-for pair in new_filenames:
-    if not pair[1]:
-        call(["rm", pair[0]])
-print("Removed", flush=True)
-
-exit(0)
