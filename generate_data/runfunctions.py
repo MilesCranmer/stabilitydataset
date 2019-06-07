@@ -166,6 +166,23 @@ def run_resonant(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False):
     except rebound.Collision:
         sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
 
+def run_resonant_condition(seed, runstr, conditionfunc, Nplanets=3, maxorbs=1.e9, shadow=False):
+    originalseed = seed
+    sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets)
+    if conditionfunc(sim):
+        if shadow:
+            shadowstr = 'shadow'
+            kicksize=1.e-11
+            sim.particles[2].x += kicksize
+        else:
+            shadowstr = ''
+        filename = '../data/resonant/simulation_archives/'+shadowstr+'runs/sa'+runstr
+        sim.automateSimulationArchive(filename, interval=maxorbs/1000., deletefile=True)
+        try:
+            sim.integrate(maxorbs*sim.particles[1].P)
+        except rebound.Collision:
+            sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
+
 def collision(reb_sim, col):
     reb_sim.contents._status = 5 # causes simulation to stop running and have flag for whether sim stopped due to collision
     return 0
