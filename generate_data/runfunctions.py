@@ -9,6 +9,7 @@ import random
 from celmech import Andoyer, Poincare, AndoyerHamiltonian
 from celmech.andoyer import get_Xstarres
 from scipy.integrate import ode
+from icecream import ic
 
 def logunif(r, mini, maxi):
     logmin = np.log10(mini)
@@ -149,7 +150,7 @@ def run_resonant(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False):
             sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets)
             sim.integrate(1.e4*sim.particles[1].P)
             success=True
-        except rebound.Collision:
+        except rebound.Collision: #bad idea - what if I pick the higher seed? Should just return None!
             seed += 700000 # roughly relatively prime with amin > amax offset above
     sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets) # get same sim
     print('{0}, {1}, {2}, {3}, {4}, {5:8e}, {6:8e}, {7:8e}\n'.format(originalseed, seed, pairindex, j, k, Zstar, libfac, Zcom))
@@ -166,6 +167,7 @@ def run_resonant(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False):
     except rebound.Collision:
         sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
 
+        
 def run_resonant_condition(seed, runstr, conditionfunc, Nplanets=3, maxorbs=1.e9, shadow=False):
     originalseed = seed
     sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets)
@@ -182,6 +184,45 @@ def run_resonant_condition(seed, runstr, conditionfunc, Nplanets=3, maxorbs=1.e9
             sim.integrate(maxorbs*sim.particles[1].P)
         except rebound.Collision:
             sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
+
+
+def run_resonant2(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False, hook=None, verbose=True):
+    originalseed = seed
+    if shadow:
+        shadowstr = 'shadow'
+    else:
+        shadowstr = ''
+    filename = '../data/short_resonant/simulation_archives/'+shadowstr+'runs/sa'+runstr
+        
+    ic("Initializing", shadow, filename)
+    try:
+        sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets)
+        sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
+        ic("Done initializing", shadow, filename)
+        sim.integrate(1.e4*sim.particles[1].P)
+    except rebound.Collision:
+        return sim, filename
+    
+    if not shadow and hook is not None:
+        continue_with_sim = hook(sim)
+        if not continue_with_sim:
+            return None, None
+    
+    sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets) # get same sim
+    if verbose:
+        print('{0}, {1}, {2}, {3}, {4}, {5:8e}, {6:8e}, {7:8e}\n'.format(originalseed, seed, pairindex, j, k, Zstar, libfac, Zcom))
+    if shadow:
+        kicksize=1.e-11
+        sim.particles[2].x += kicksize
+#     sim.automateSimulationArchive(filename, interval=maxorbs/1000., deletefile=True)
+    try:
+        sim.integrate(maxorbs*sim.particles[1].P)
+    except rebound.Collision:
+        ...
+#         sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
+    return sim, filename
+
+
 
 def collision(reb_sim, col):
     reb_sim.contents._status = 5 # causes simulation to stop running and have flag for whether sim stopped due to collision
