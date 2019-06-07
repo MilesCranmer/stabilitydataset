@@ -186,13 +186,13 @@ def run_resonant_condition(seed, runstr, conditionfunc, Nplanets=3, maxorbs=1.e9
             sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
 
 
-def run_resonant2(seed, runstr, Nplanets=3, maxorbs=1.e9, shadow=False, hook=None, verbose=True):
+def run_resonant2(seed, runstr, base, Nplanets=3, maxorbs=1.e9, shadow=False, hook=None, verbose=True):
     originalseed = seed
     if shadow:
         shadowstr = 'shadow'
     else:
         shadowstr = ''
-    filename = '../data/short_resonant/simulation_archives/'+shadowstr+'runs/sa'+runstr
+    filename = '../data/' + base + '/simulation_archives/'+shadowstr+'runs/sa'+runstr
         
     ic("Initializing", shadow, filename)
     try:

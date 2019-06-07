@@ -24,25 +24,40 @@ kwargs['Nout'] = 1000
 def hook(sim):
     """Gets the sim at 0 orbits."""
 
-    q = ressummaryfeaturesxgb(sim, list(kwargs.values()))
-    print(q)
-
+    #features = ressummaryfeaturesxgb(sim, list(kwargs.values()))
     return True
 
 # !rm ../data/resonant/simulation_archives/*runs/* 
 
 filenames = []
 
-new_seeds = list(range(10000+120000, 10005+120000))
+start = int(sys.argv[1])
+step_size = 10*1000
+end = start + step_size
+
+new_seeds = list(range(start + 121000, end + 121000))
+
+base = 'short_resonant_%.12d' % (start,)
+folder_root = '../data/' + base 
+import os
+os.makedirs(folder_root, exist_ok=True)  # succeeds even if directory exists.
+os.makedirs(folder_root + '/simulation_archives/runs/', exist_ok=True)
+os.makedirs(folder_root + '/simulation_archives/shadowruns/', exist_ok=True)
 
 from multiprocessing import Pool
 
 from subprocess import call
 
+explicitly_find_max_stability = True
+max_stable_orbs = 1e5
+
 def run_sim(seed):
-    maxorbs = 1e5 #Set to small number like 5 if only relying on hook!
+    if explicitly_find_max_stability:
+        maxorbs = max_stable_orbs
+    else:
+        maxorbs = 5
     initial_filename = 'test%.12d.bin'%(seed,)
-    sim, filename = run_resonant2(seed, initial_filename, maxorbs=maxorbs, hook=hook, verbose=False)
+    sim, filename = run_resonant2(seed, initial_filename, base=base, maxorbs=maxorbs, hook=hook, verbose=False)
 
     good_sim = True
     
@@ -63,7 +78,7 @@ def run_sim(seed):
     ic("Nice system to test!")
     if good_sim:
         ic("Doing shadow test")
-        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, maxorbs=5, hook=hook, verbose=False, shadow=True)
+        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, base=base, maxorbs=5, hook=hook, verbose=False, shadow=True)
         ic("Done shadow test")
     return filename
 
