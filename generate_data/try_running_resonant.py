@@ -20,6 +20,7 @@ from collections import OrderedDict
 kwargs = OrderedDict()
 kwargs['Norbits'] = 1e4
 kwargs['Nout'] = 1000
+kwargs['window'] = 10
 
 def hook(sim):
     """Gets the sim at 0 orbits."""
@@ -31,14 +32,16 @@ def hook(sim):
 
 filenames = []
 
-start = int(sys.argv[1])
-step_size = 10*1000
+steps = int(sys.argv[1]) + 10
+step_size = 100*1000#100*1000
+start = steps * step_size
 end = start + step_size
 
 new_seeds = list(range(start + 121000, end + 121000))
 
-base = 'short_resonant_%.12d' % (start,)
-folder_root = '../data/' + base 
+base = 'medium_resonant_%.12d' % (start,)
+#folder_root = '../data/' + base 
+folder_root = '/mnt/ceph/users/mcranmer/general_data/orbital_integrations/' + base
 import os
 os.makedirs(folder_root, exist_ok=True)  # succeeds even if directory exists.
 os.makedirs(folder_root + '/simulation_archives/runs/', exist_ok=True)
@@ -49,7 +52,7 @@ from multiprocessing import Pool
 from subprocess import call
 
 explicitly_find_max_stability = True
-max_stable_orbs = 1e5
+max_stable_orbs = 1e6
 
 def run_sim(seed):
     if explicitly_find_max_stability:
@@ -57,7 +60,7 @@ def run_sim(seed):
     else:
         maxorbs = 5
     initial_filename = 'test%.12d.bin'%(seed,)
-    sim, filename = run_resonant2(seed, initial_filename, base=base, maxorbs=maxorbs, hook=hook, verbose=False)
+    sim, filename = run_resonant2(seed, initial_filename, base=folder_root, maxorbs=maxorbs, hook=hook, verbose=False)
 
     good_sim = True
     
@@ -75,13 +78,10 @@ def run_sim(seed):
         call(["rm", filename])
         return None
     
-    ic("Nice system to test!")
     if good_sim:
-        ic("Doing shadow test")
-        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, base=base, maxorbs=5, hook=hook, verbose=False, shadow=True)
-        ic("Done shadow test")
+        sim_shadow, filename_shadow = run_resonant2(seed, initial_filename, base=folder_root, maxorbs=maxorbs, hook=hook, verbose=False, shadow=True)
     return filename
 
-pool = Pool(35)
+pool = Pool(40)
 new_filenames = pool.map(run_sim, new_seeds)
 

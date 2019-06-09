@@ -192,15 +192,14 @@ def run_resonant2(seed, runstr, base, Nplanets=3, maxorbs=1.e9, shadow=False, ho
         shadowstr = 'shadow'
     else:
         shadowstr = ''
-    filename = '../data/' + base + '/simulation_archives/'+shadowstr+'runs/sa'+runstr
+    filename = base + '/simulation_archives/'+shadowstr+'runs/sa'+runstr
         
-    ic("Initializing", shadow, filename)
     try:
         sim, j, k, pairindex, Zstar, libfac, Zcom = get_resonant(seed, Nplanets)
-        sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
-        ic("Done initializing", shadow, filename)
+        sim.simulationarchive_snapshot(filename)
         sim.integrate(1.e4*sim.particles[1].P)
     except rebound.Collision:
+        sim.simulationarchive_snapshot(filename) # save final snapshot if collision occurs
         return sim, filename
     
     if not shadow and hook is not None:
@@ -218,9 +217,9 @@ def run_resonant2(seed, runstr, base, Nplanets=3, maxorbs=1.e9, shadow=False, ho
 #     sim.automateSimulationArchive(filename, interval=maxorbs/1000., deletefile=True)
     try:
         sim.integrate(maxorbs*sim.particles[1].P)
+        sim.simulationarchive_snapshot(filename)
     except rebound.Collision:
-        ...
-#         sim.simulationarchive_snapshot(filename)  # save final snapshot if collision occurs
+        sim.simulationarchive_snapshot(filename) # save final snapshot if collision occurs
     return sim, filename
 
 
